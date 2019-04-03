@@ -1,0 +1,60 @@
+/*  */
+.tabdata{
+	margin-left: 10px;
+	margin-top: 0px;
+}
+.pwdacc input,
+.tabdata input,
+.tabdata input[type='checkbox']{
+	border-color: #e1e1e1;
+	border-width: 2px;
+	border-style: solid;
+}
+.port input{
+	width: 5ch;
+	text-align: right;
+	border-width: 2px;
+}
+.ip input{
+	width: 3ch;
+	text-align: right;
+}
+.tabmac{width: 180px;}
+.mac td{width: 3ch;}
+.mac input{
+	width: 2ch;
+	text-align: right;
+	border-style: solid;	
+}
+.pwddiv table{margin-top: 0px;}
+.pwddiv p{margin-bottom: 0px;}
+
+.setssid td{width: 20%;}
+.inl{display:inline; width: 120px;}
+.chan{font-size: 0.7em;}
+.mcp td{vertical-align: top;}
+.clrwhite{background-color: white;}
+.mcpadrset{width: 130px;}
+.ssiditem td:nth-child(4){width:40px;}
+
+.usedevmac{
+	display: none;
+}
+.defmac{
+	display: block;
+}
+.usedhcp{
+	display:none;
+}
+.usedhcptr{
+	display:none;
+}
+.defip{
+	display: inline;
+}
+.defiptr{
+}
+
+
+
+
