@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="UTF-8">
+  <title>Introdution ESP8266 8ch relay control</title>
+  <link rel="stylesheet" type="text/css" href="./intro.css">
+</head>
+
+<body>
+  <h2>Introduction</h2>
+  The ESP8266 8 channel relay control is a project that requires three board circuits
+  to operate relays via a web browser (or ther app using HTTP protocols).
+  <p>The three circuits are:</p>
+  <ol>
+    <li>ESP8266 (NodeMCU, WeMos D1,... are the boards)
+      <p>This board will be uploaded with the esp8266 8ch relay control
+        .ino and classes, and the browser files. The esp8266_8ch_relay_control
+        folder contains a sketch project for Arduino IDE (user needs to setup IDE to support
+        ESP8266 development [search the web]).</p>
+      <p>This is a 3.3V operating board. Any voltage greater than 3.3V on a GPIO will
+        damage the circuit/board.</p>
+    </li>
+    <li>MCP23017 extender circuit
+      <div class='pandlidiv'>
+        <p>This circuit provides an interface between the ESP8266 and relay circuit.
+          The design requires this as the ESP8266 does not have:</p>
+        <ul>
+          <li>8 GPIO pins free for 8 relay</li>
+          <li>the GPIO pin power is insufficient to drive the relay IO ports</li>
+        </ul>
+      </div>
+      <p>This circuit supports 1.8V to 5.5V operating circuit (see the data sheet
+        for better information).</p>
+    </li>
+    <li>8 Channel 5V relay board
+      <p>This is the relay board and holds 8 relays (8 channel) and will connect
+        to the MCP23017 GPIO pins directly. However, the operation of the relays
+        requires 5V and 15mA-25mA.</p>
+      <p>The ESP8266 GPIO pins typically only provide 10mA; thus, further need for the MCP23017.</p>
+    </li>
+  </ol>
+  <p>Following is a diagrammatic representation of the inter-connection between the boards.</p>
+  <img src="./circuits.png" alt="missing image" />
+  <p>Notes:</p>
+  <ul>
+    <li>The power connections between ESP8266 and MCP23017 need to be -3.3V, which
+      is provided from the ESP8266 NodeMCU or WeMos D1 board.
+      <p>Otherwise an alternative -3.3V
+        supply is required to the MCP23017 and ESP8266. </p>
+    </li>
+    <li>The relay board is best powered by its own -5V source. However.
+      <ul>
+        <li>A WeMos D1 development board has -3.3V and -5V power pins and plugged into a
+          USB 3 port has just enough power to drive the relay board too, if using the
+          boards -5V out pin.
+          <p>This is on the power-edge and all 8 relays activated may not actually work.</p>
+      </ul>
+    </li>
+    <li>The MCP23017 extender may be purchased or built.
+      <p> But must be powered by the ESP8266 boards -3.3V power source.
+        The ESP8266 will be damaged otherwise due to the I2C connections running outside -3.3V.</p>
+      <div class='indenttab'>
+        <p>The Group A GPIO pins are used to connect to the relay-board </p>
+        <table class='tabpinconn'>
+          <tr>
+            <td>MCP2301 GPIO A pin #</td>
+            <td>0</td>
+            <td>1</td>
+            <td>2</td>
+            <td>3</td>
+            <td>4</td>
+            <td>5</td>
+            <td>6</td>
+            <td>7</td>
+          </tr>
+          <tr>
+            <td>8 ch relay pin</td>
+            <td>r8</td>
+            <td>r7</td>
+            <td>r6</td>
+            <td>r5</td>
+            <td>r4</td>
+            <td>r3</td>
+            <td>r2</td>
+            <td>r1</td>
+          </tr>
+        </table>
+      </div>
+    </lI>
+    <li>The ESP8266 board e.g. NodeMCU, WeMos D1 mini, WeMos D1 development board,....
+      will have different power-in needs. If powering just from a USB, this will
+      likely not provide enough power to drive all boards of the ESP8266 board out
+      voltage pins.</li>
+  </ul>
+
+</body>
+
+</html>

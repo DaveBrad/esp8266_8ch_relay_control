@@ -1,0 +1,16 @@
+.pandlidiv li{
+  margin-top: 0px;
+}
+.pandlidiv p{
+margin-bottom: 0px;
+}
+.tabpinconn{border: 1px solid;}
+.tabpinconn td{
+  border: 1px solid;
+  text-align: center;
+  padding-right: 10px;
+  padding-left: 10px;
+}
+.indenttab{
+  margin: 30px;
+}
