@@ -26,7 +26,7 @@
 //
 // for production these need to be commented out
 #include "DevFsUpload.h" // NOTE: comment out for production releases
-#define MCP23017_emulate
+//#define MCP23017_emulate
 
 #define DEBUG
 //#define DEBUGMARK // debug mark message point in code

@@ -1,0 +1,160 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+  <title>Help - Wemos D1 relay control configuration</title>
+  <meta charset="UTF-8" />
+  <link rel="stylesheet" type="text/css" href="./wmossecr.css">
+ </head>
+ <body>
+  <div class="pwddiv">
+   <p id='entpwd'>Enter a password for device access configuration changes (8-16 characters).</p> 
+   <button id='chgpwd'>Change password</button>
+   <div id="pwddiv">
+    <table>
+     <tr>
+      <td>Enter password:</td>
+      <td><input id="pwd1" type="password" name="pwd1" value="" ></td>
+      <td>Confirm password:</td>
+      <td><input id="pwd1c" type="password" name="pwd1c" value=""></td>
+      <td id='pwdsubutt'>
+       <button id='pwdbutt' onclick="subpwd();" type="button" disabled>Submit password</button>
+      </td>
+     </tr>
+    </table>
+   </div>
+  </div>
+  <br>
+  <div id="configfields">
+   <h3>Network access-point (router)</h3>
+   <table class="tabdata">
+    <tr>
+     <td colspan="3">
+      <table id='ssidlist'>
+       <!-- to be filled in -->
+      </table>
+     </td>
+    </tr>
+   </table>
+   <div id="conndatadiv">
+    <h3>Device (ESP8266) connection data</h3>
+    <div id="ipinputdivparent">
+     <div id="ipinputdiv">
+      <table class="tabdata">
+       <tr>
+        <td>
+         <table>
+		  <tr>
+           <td>SSID channel</td>
+		   <td><input type='text' id='ssidch' name='ssidch' size='2' maxlength='2'		value='-1'></td>
+		   <td>SSID channel will cause connextion via this channel or auto.</td>
+		  </tr>
+          <tr>
+           <td>Config MAC addr</td>
+           <td>
+            <table class="tabmac">
+             <tr class="mac">
+              <td><input type='text' id="mac1" name='mac1' value="xx" size='2' maxlength="2" >:</td>
+              <td><input type='text' id="mac2" name='mac2' value="xx" size='2' maxlength="2">:</td>
+              <td><input type='text' id="mac3" name='mac3' value="xx" size='2' maxlength="2">:</td>
+              <td><input type='text' id="mac4" name='mac4' value="xx" size='2' maxlength="2">:</td>
+              <td><input type='text' id="mac5" name='mac5' value="xx" size='2' maxlength="2">:</td>
+              <td><input type='text' id="mac6" name='mac6' value="xx" size='2' maxlength="2"></td>
+             </tr>
+            </table>
+           </td>
+           <td>Device MAC address local-router will assign static IP address to. (Fields required 2 Hex digit format.)</td>
+          </tr>
+
+          <tr class="port">
+           <td><label>HTTP port</label></td>
+           <td><input type='text' id="httpport" name='httpport' value="80" size='5' maxlength="5">
+           </td>
+		   <td>The port number to be used for HTTP access (default is 80)</td>
+          </tr>
+          <tr>
+           <td>Set IP addr</td>
+           <td>
+            <table>
+             <tr class="ip">
+              <td><input type='text' id="ip1" name='ip1' value="192" size='3' maxlength="3">.</td>
+              <td><input type='text' id="ip2" name='ip2' value="168" size='3' maxlength="3">.</td>
+              <td><input type='text' id="ip3" name='ip3' value="4" size='3' maxlength="3">.</td>
+              <td><input type='text' id="ip4" name='ip4' value="1" size='3' maxlength="3"></td>
+             </tr>
+            </table>
+           <td>The IP address this device is to have when connected to your local network.</td>
+          </tr>
+          <tr>
+           <td>Set IP gateway addr</td>
+           <td>
+            <table>
+             <tr class="ip">
+              <td><input type='text' id="ipgw1" name='ipgw1' value="192" size='3' maxlength="3">.</td>
+              <td><input type='text' id="ipgw2" name='ipgw2' value="168" size='3' maxlength="3">.</td>
+              <td><input type='text' id="ipgw3" name='ipgw3' value="4" size='3' maxlength="3">.</td>
+              <td><input type='text' id="ipgw4" name='ipgw4' value="1" size='3' maxlength="3"></td>
+             </tr>
+            </table>
+           </td>
+           <td>The IP address this device is to have when connected to your local network.</td>
+          </tr>
+          <tr>
+           <td>Set IP subnet mask</td>
+           <td>
+            <table>
+             <tr class="ip">
+              <td><input type='text' id="ipmsk1" name='ipmsk1' value="255" size='3' maxlength="3">.</td>
+              <td><input type='text' id="ipmsk2" name='ipmsk2' value="255" size='3' maxlength="3">.</td>
+              <td><input type='text' id="ipmsk3" name='ipmsk3' value="255" size='3' maxlength="3">.</td>
+              <td><input type='text' id="ipmsk4" name='ipmsk4' value="0" size='3' maxlength="3"></td>
+             </tr>
+            </table>
+           </td>
+           <td>The IP subnet mask for your local network.</td>
+          </tr>
+          <tr class="port">
+           <td>TCP port access</td>
+           <td><input type='text' id="tcpport" name='tcpport' value="81" size='5' maxlength="5"></td>
+           <td>The device may be controlled directly and this is the port (within local network).</td>
+          </tr>
+         </table>
+      </table>
+     </div>
+    </div>
+	
+   </div>
+   <table class="pwdacc setssid"><tr><td>
+    <input type='password' id="pwdcfg" value="">
+   </td>
+   <td >Device/access password</td>
+   <td>&nbsp;</td>
+   <td>&nbsp;</td>
+   </tr>
+   <tr>
+   <td>
+    <button id='resrt1' class='inl' type="button">Activate-reboot</button>
+   
+    <button id='resrt2'  class='inl' type="button">Reboot to AP</button>
+   </td>
+   <td>&nbsp;</td>
+   <td>&nbsp;</td>
+   </tr>
+   <tr>
+   <tr><td>&nbsp;</td>
+   </tr>
+   <td>
+    <button id='factory' class='inl'  type="button">Factory reset</button>
+	WARNING:
+   </td>
+   
+   </tr>
+   <tr>
+   <td colspan='4'>Will reset all configuration data to factory default. Will need to access
+   via http://192.168.4.1:8011 to set up new configuration, factory password
+   will apply.
+   </td>
+   </tr>
+   </table>
+   </div>
+ </body>
+</html>

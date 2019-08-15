@@ -1,0 +1,143 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+<title>HELP: Wemos D1 relay controls</title>
+<meta charset="UTF-8" />
+<link rel="stylesheet" type="text/css" href="./wmosbas2.css">
+</head>
+<body onload="onloadInit();">
+<table class='tabfield'>
+<tr>
+<td id='cfg1'> </td>
+<td id='cfg2'> </td>
+<td id='cfg3'>u stair</td>
+<td id='cfg4'> </td>
+<td id='cfg5'> </td>
+<td id='cfg6'> </td>
+<td id='cfg7'> </td>
+<td id='cfg8'> </td>
+<td> </td>
+</tr>
+<tr>
+<td><button tabindex="10" type="button">ON-1</button></td>
+<td><button tabindex="12" type="button">ON-2</button></td>
+<td class='onclr'><button tabindex="14" type="button">ON-3</button></td>
+<td><button tabindex="16" type="button">ON-4</button></td>
+<td><button tabindex="18" type="button">ON-5</button></td>
+<td class='transclr'><button tabindex="20" type="button">ON-6</button></td>
+<td><button tabindex="22" type="button">ON-7</button></td>
+<td><button tabindex="24" type="button">ON-8</button></td>
+<td><button tabindex="26" type="button">ON-all</button></td>
+</tr>
+<tr>
+<td class='offclr'><button tabindex="11" type="button">OFF-1</button></td>
+<td class='offclr'><button tabindex="13" type="button">OFF-2</button></td>
+<td><button tabindex="15" type="button">OFF-3</button></td>
+<td class='offclr'><button tabindex="17" type="button">OFF-4</button></td>
+<td class='offclr'><button tabindex="19" type="button">OFF-5</button></td>
+<td class='offclr'><button tabindex="21" type="button">OFF-6</button></td>
+<td class='offclr'><button tabindex="23" type="button">OFF-7</button></td>
+<td class='offclr'><button tabindex="25" type="button">OFF-8</button></td>
+<td><button tabindex="27" type="button">OFF-all</button></td>
+</tr>
+<tr>
+<td><button  class='cfgbtclz' tabindex="29" type="button"><span style="font-size: 0.7em">Config</span></button></td>
+<td colspan="7" class="small">
+<p>Relay's state donated by color, select none-color to change.</P>
+</td>
+<td><button tabindex="28" type="button">Refresh</button></td>
+</tr>
+</table>
+
+<p>Control of  relays is via this web-page. It allows
+each relay to be controlled via a on/off button activate action. This will connect
+to a device and cause a relay to change to the on or off state. However,
+as this communicates with an ESP8266 device (this design) there is potential
+for a delay in the action-request, to process, to done-action. The states area
+represented by the colors on the buttons:
+</p>
+
+<table class='tabfield'>
+<tr>
+<td id='cfg1'> </td>
+<td id='cfg2'> </td>
+<td id='cfg3'>u stair</td>
+<td id='cfg4'> </td>
+<td id='cfg5'> </td>
+<td id='cfg6'> </td>
+<td id='cfg7'> </td>
+<td id='cfg8'> </td>
+<td> </td>
+</tr>
+<tr>
+<td><button tabindex="10" type="button">ON-1</button></td>
+<td><button tabindex="12" type="button">ON-2</button></td>
+<td class='onclr'><button tabindex="14" type="button">ON-3</button></td>
+<td><button tabindex="16" type="button">ON-4</button></td>
+<td><button tabindex="18" type="button">ON-5</button></td>
+<td class='transclr'><button tabindex="20" type="button">ON-6</button></td>
+<td><button tabindex="22" type="button">ON-7</button></td>
+<td><button tabindex="24" type="button">ON-8</button></td>
+<td><button tabindex="26" type="button">ON-all</button></td>
+</tr>
+<tr>
+<td class='offclr'><button tabindex="11" type="button">OFF-1</button></td>
+<td class='offclr'><button tabindex="13" type="button">OFF-2</button></td>
+<td><button tabindex="15" type="button">OFF-3</button></td>
+<td class='offclr'><button tabindex="17" type="button">OFF-4</button></td>
+<td class='offclr'><button tabindex="19" type="button">OFF-5</button></td>
+<td class='offclr'><button tabindex="21" type="button">OFF-6</button></td>
+<td class='offclr'><button tabindex="23" type="button">OFF-7</button></td>
+<td class='offclr'><button tabindex="25" type="button">OFF-8</button></td>
+<td><button tabindex="27" type="button">OFF-all</button></td>
+</tr>
+<tr>
+<td><button  class='cfgbtclz' tabindex="29" type="button"><span style="font-size: 0.7em">Config</span></button></td>
+<td colspan="7" class="small">
+<p>Relay's state donated by color, select none-color to change.</P>
+</td>
+<td><button tabindex="28" type="button">Refresh</button></td>
+</tr>
+
+</table>
+<table id='cfgformtr' class='tabfield'>
+<tr>
+<td><input type="text" value='xx'></input></td>
+<td><input type="text" name="inp2" id="inp2" vale 
+	
+    onpaste="this.onchange();" oninput="this.onchange();"></input></td>
+<td><input type="text" name="inp3" id="inp3" 
+	></input></td>
+<td><input type="text" name="inp4" id="inp4"></input></td>
+<td><input type="text" name="inp5" id="inp5"></input></td>
+<td><input type="text" name="inp6" id="inp6"></input></td>
+<td><input type="text" name="inp7" id="inp7"></input></td>
+<td><input type="text" name="inp8" id="inp8"></input></td>
+<td><input type='button' id="submitcfg" value="submit"></input></td>
+</tr>
+
+<tr>
+<td><input type="checkbox" name="cb1" value="on" checked></input></td>
+<td><input type="checkbox" name="cb2" value="on" checked></input></td>
+<td><input type="checkbox" name="cb3" value="on" checked></input></td>
+<td><input type="checkbox" name="cb4" value="on" checked></input></td>
+<td><input type="checkbox" name="cb5" value="on" checked></input></td>
+<td><input type="checkbox" name="cb6" value="on" checked></input></td>
+<td><input type="checkbox" name="cb7" value="on" checked></input></td>
+<td><input type="checkbox" name="cb8" value="on" checked></input></td>
+<td></td>
+</tr>
+<tr>
+<td  colspan="5" class="pwdacc2">
+&nbsp;Access password&nbsp;
+<input type='password' id="pwdcfg" value="" size="20">
+</td>
+<td  colspan="2">
+<button id='pwdbutt' onclick="pwbuttact();" type="button">Device config</button>
+</td>
+</tr>
+</table>
+
+</body>
+</html>
+ 
