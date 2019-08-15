@@ -11,6 +11,8 @@
 #include "SsidCfgMgr.h"
 #include "AesPrc.h"
 #include "DoubleResetDetector.h"
+#include "Client.h"
+#include "SerialEE.h"
 
 // The following include and define lines allow for
 // development of the code and provides:
@@ -25,9 +27,9 @@
 //    causes messages to the monitor serial port to be output
 //
 // for production these need to be commented out
+//
 #include "DevFsUpload.h" // NOTE: comment out for production releases
-#define MCP23017_emulate
-
+//#define MCP23017_emulate
 #define DEBUG
 //#define DEBUGMARK // debug mark message point in code
 
@@ -41,15 +43,28 @@
 #define Dprintln(...)    // DEBUG println
 #define Dmark(...)       // DEBUGMARK is a mark -> println at marked point in code
 
-// re-dfine macro's if the DEBUG condition is set
+// re-define macro's if the DEBUG condition is set
 //
 #ifdef DEBUG
-#define Dprint(...)    Serial.print(__VA_ARGS__)
-#define Dprintln(...)  Serial.println(__VA_ARGS__)
+
+boolean dbMsg = true;
+
+#define Dprint(...) \
+  if(dbMsg){ Serial.print("db>> "); dbMsg = false; } \
+  Serial.print(__VA_ARGS__)
+
+#define Dprintln(...) \
+  if(dbMsg){Serial.print("db>> "); } \
+  Serial.print (__VA_ARGS__); \
+  Serial.println (" <<"); \
+  dbMsg = true;
 #endif
 
 #ifdef DEBUGMARK
-#define Dmark(...)  Serial.println(__VA_ARGS__)
+#define Dmark(...) \
+  Serial.print("db>m>> "); \
+  Serial.print(__VA_ARGS__); \
+  Serial.println(" <<")
 #endif
 
 // - - - - debug: other specific debug conditions
@@ -153,37 +168,70 @@ int tcpPort = 81;       //  81?                      (81)
 // determine at restart: is SoftAP (initial state), or as-station running
 boolean runningAsStation = false;
 
+// if set to run as serial, the WiFi and  WebServer will not run and
+// controls will be via serial requests
+boolean runningAsSerial = false;
+#define INPUTMAX 64
+// device-access password
+const char* runAsSerialFilename PROGMEM = "/cfgserial";
+
+/*
+   Documentation of operation for serial and TCPSever
+
+
+   int relayOperateIndex = request.indexOf("/RLY=O");
+    if (relayOperateIndex > -1) {
+
+      processRlyOxxxxx(client, request, relayOperateIndex, tcpAccessed);
+    }
+   On actions
+
+
+   Off actions
+
+
+   Query actions
+
+
+*/
+
 // ------------- loop ------------
 void loop() {
   // double reset detection loop requirement interface
   drd.loop();
 
-  // when running as a station it is possible that a connection
-  // to the router may drop, attempt to recovery from this disconnection
-  if (runningAsStation) {
-    boolean currentConnectedState = (WiFi.status() == WL_CONNECTED);
-    while (!currentConnectedState) {
-      // loop until a connection can be made, with a 15 second
-      // delay between each cycle
-      Dprintln("Disconnected from server, attempt recovery.");
+  if (runningAsSerial) {
+    runAsSerial();
+  } else {
 
-      delay(15000);
+    // when running as a station it is possible that a connection
+    // to the router may drop, attempt to recovery from this disconnection
+    if (runningAsStation) {
+      boolean currentConnectedState = (WiFi.status() == WL_CONNECTED);
+      while (!currentConnectedState) {
+        // loop until a connection can be made, with a 15 second
+        // delay between each cycle
+        Dprintln("Disconnected from server, attempt recovery.");
 
-      srtWifiSvrStation();
-      currentConnectedState = (WiFi.status() == WL_CONNECTED);
-    } // end while
-    // as-station also supports TCP access
-    delay(10);
-//    tcpServerFunc();
+        delay(15000);
+
+        srtWifiSvrStation();
+        currentConnectedState = (WiFi.status() == WL_CONNECTED);
+      } // end while
+      // as-station also supports TCP access
+      delay(10);
+      //    tcpServerFunc();
+
+      runAsSerial();
+    }
+    // as-station or SoftAP handle client request
+    server->handleClient();
+
+    // sleep modes: this basicially locks up the device so not implemented
+    //
+    //  wifi_set_sleep_type(MODEM_SLEEP_T);
+    //  WiFi.forceSleepBegin();
   }
-  // as-station or SoftAP handle client request
-  server->handleClient();
-
-  // sleep modes: this basicially locks up the device so not implemented
-  //
-  //  wifi_set_sleep_type(MODEM_SLEEP_T);
-  //  WiFi.forceSleepBegin();
-  //
   delay(50); // cool down processor (not mission critical application)
 }
 // ------------- setup ------------
@@ -199,11 +247,24 @@ void setup() {
   Serial.println();
   delay(50);
 
+
   // initialize the SPIFFS, should not fail
   if (!srtSpiffs()) {
     // app is dependent on SPIFFS so there is nothing that can be done
     system_deep_sleep(0);
   }
+  runningAsSerial = SPIFFS.exists(runAsSerialFilename);
+
+  if (runningAsSerial) {
+    Dprintln("Running in Serial Mode.");
+
+    // prepare the MCP23017 interface
+    mcp23017I2CAddr = loadMcpAddress();
+    connectMCP23017();
+    return;
+  }
+
+
   // if
   // - the device has been configured then running as station
   // - configured device-access password is contained within a file
@@ -265,10 +326,12 @@ void setup() {
   //     needs an external GPIO board like MCP23017: note that I2C seems to be
   //     a more recommended communication 'channel']
 
+  // for both the AP and station need the MCP address stored away
+  // (AP on factory reset will be
+  mcp23017I2CAddr = loadMcpAddress();
+
   if (runningAsStation) {
     Dprint("Station mode");
-
-    mcp23017I2CAddr = loadMcpAddress();
 
     server->on("/", HTTP_GET, handleRoot);
     server->on("/CONFIG", HTTP_POST, handleLabelsConfig);
@@ -284,20 +347,10 @@ void setup() {
     // with the SPIFFS running read the config data before
     // the wifi is set up
     loadLabelsConfig();
+
     // prepare the MCP23017 interface
-    // [there is only one MCP23017 device per WeMos D1 associated. The
-    // MCP needs to be set/reset via the device configuration webpage.]
-    mcp23017Obj = new Mcp23017(mcp23017I2CAddr);
+    connectMCP23017();
 
-#ifdef MCP23017_emulate
-    mcp23017Obj->emulateMode = true;
-#endif
-
-    if (!Mcp23017::connectUpI2c()) {
-      // there is nothing that can be done, but things
-      // may stabilize through natural processing, so continue regardless
-      Dprintln("\nfail to start I2C\n");
-    }
     boolean notConnected = true;
     while (notConnected) {
       notConnected = !srtWifiSvrStation();
@@ -308,7 +361,7 @@ void setup() {
       }
     }
   } else {
-    Dprint("SoftAP mode");
+    Dprintln("SoftAP mode");
     loadMacAddr();
 
     server->on("/", HTTP_GET, handleInitRoot);
@@ -333,7 +386,23 @@ void setup() {
     }
   }
   Dprintln("");
+}
 
+void connectMCP23017() {
+  // prepare the MCP23017 interface
+  // [there is only one MCP23017 device per WeMos D1 associated. The
+  // MCP needs to be set/reset via the device configuration webpage.]
+  mcp23017Obj = new Mcp23017(mcp23017I2CAddr);
+
+#ifdef MCP23017_emulate
+  mcp23017Obj->emulateMode = true;
+#endif
+
+  if (!Mcp23017::connectUpI2c()) {
+    // there is nothing that can be done, but things
+    // may stabilize through natural processing, so continue regardless
+    Dprintln("\nfail to start I2C\n");
+  }
 }
 
 //
@@ -371,8 +440,19 @@ void tcpServerFunc() {
 
     int relayOperateIndex = request.indexOf("/RLY=O");
     if (relayOperateIndex > -1) {
+      // client.print("ACK>");
+      //      serialEE SerialEE = SerialEE();
+      //
+      //       Serial.println("line 410");
+      //
+      //      processRlyOxxxxx(serialEE, request, relayOperateIndex, tcpAccessed);
+      //      //      processRlyOxxxxx(client, request, relayOperateIndex, tcpAccessed);
+      //
+      //      client.print(SerialEE.toString());
 
-      processRlyOxxxxx(client, request, relayOperateIndex, tcpAccessed);
+      delay(100); // if not provided the buffer is not complete for tcp access response
+      client.flush();
+      client.stop(); // without this there is a 2-3 second delay
     }
     //    client
     client.flush();
@@ -388,49 +468,102 @@ void handleActssid() {
     if (!checkPassword(AesPrc::dePassword(server->arg("pwdacc")))) {
       return;
     }
+    // need to be a valid request for change as per 'type' and
+    // assume the type is not-serial request (typically would be running
+    // in WiFi mode)
     boolean validBool = false;
+    boolean notSerialMode = true;
 
     if (server->hasArg("type")) {
       String typeValue = server->arg("type");
-      if (typeValue == "ap") {
-        // request a restart will come back as SoftAP
-        File f = SPIFFS.open(cfgaccAP, "w");
-        if (!f) {
-          // failed, nothing may be done
-          // TODO should consider a HTTP error response
-        } else {
-          f.print("ap");
-          f.close();
-          validBool = true;
-        }
-      }
-      if (typeValue == "factory") {
-        validBool = true;
 
-        // scan the file system and remove all files begining with
-        // '/cfg'
+      // respond to the browser
+      byte modeByte = setMode(typeValue);
 
-        Dir dir = SPIFFS.openDir("/");
-        while (dir.next()) {
-          String fn = dir.fileName();
-
-          if (fn.startsWith("/cfg")) {
-            SPIFFS.remove(fn);
-          }
-        }
-      }
-      if (typeValue == "sta") {
-        validBool = true;
-      }
+      // mode byte if a binary for the settings of validBool and notSerialMode
+      validBool = (modeByte &  2) > 0;
+      notSerialMode = (modeByte &  1 > 0);
     }
-    // respond to the browser
+    // respond to browser
     server->send(200);
     if (validBool) {
+      if (notSerialMode) {
+        // if changing from serial to something else, remove the
+        // cfg file
+        SPIFFS.remove(runAsSerialFilename);
+      }
       delay(1000);
       accessPermit = true;
       handleRestart();
     }
   }
+}
+
+byte setMode(String typeValue) {
+
+  // need to be a valid request for change as per 'type' and
+  // assume the type is not-serial request (typically would be running
+  // in WiFi mode)
+  boolean validBool = false;
+  boolean notSerialMode = true;
+
+  // set as AP-mode on restart recovery
+  if (typeValue == "ap") {
+    // request a restart will come back as SoftAP
+    File f = SPIFFS.open(cfgaccAP, "w");
+    if (!f) {
+      // failed, nothing may be done
+      // TODO should consider a HTTP error response
+    } else {
+      f.print("ap");
+      f.close();
+      validBool = true;
+    }
+  }
+  // set to factory mode, basically will delete all files
+  // and configuration data from the ESP8266
+  if (typeValue == "factory") {
+    validBool = true;
+
+    // scan the file system and remove all files begining with
+    // '/cfg'
+
+    Dir dir = SPIFFS.openDir("/");
+    while (dir.next()) {
+      String fn = dir.fileName();
+
+      if (fn.startsWith("/cfg")) {
+        SPIFFS.remove(fn);
+      }
+    }
+  }
+  // set to station mode, which is a basic reboot without anything
+  // special being done
+  if (typeValue == "sta") {
+    validBool = true;
+  }
+  // set to serial-port
+  if (typeValue == "serial") {
+    // request a restart will come back as Serial-port access
+    File f = SPIFFS.open(runAsSerialFilename, "w");
+    if (!f) {
+      // failed, nothing may be done
+      // TODO should consider a HTTP error response
+    } else {
+      f.print("serial");
+      f.close();
+      validBool = true;
+      notSerialMode = false;
+    }
+  }
+  byte modeByte = 0;
+  if (validBool) {
+    modeByte += 2;
+  }
+  if (notSerialMode) {
+    modeByte += 1;
+  }
+  return modeByte;
 }
 
 /*
@@ -529,6 +662,8 @@ void handleRoot() {
 }
 
 void handleNotFound() {
+  SerialEE* serialEEObj;
+
   Dmark("handleNotFound");
 
   accessPermit = false;
@@ -538,8 +673,19 @@ void handleNotFound() {
 
   int relayOperateIndex = path.indexOf("/RLY=O");
   if (relayOperateIndex > -1) {
-    processRlyOxxxxx(client, path, relayOperateIndex, httpAccessed);
+    HttpCtrl::respondHttp200(client, "text/plain");
 
+    serialEEObj = new SerialEE();
+    processRlyOxxxxx(serialEEObj, path, relayOperateIndex, httpAccessed);
+    //    processRlyOxxxxx(client, path, relayOperateIndex, httpAccessed);
+
+    String test = serialEEObj->toString();
+    //    Serial.print(test);
+
+    client.print(test);
+    //    client.println("");
+    client.flush();
+    client.stop(); // without this there is a 2-3 second delay
   } else {
     HttpCtrl::httpFileUpload(client, path);
   }
@@ -584,11 +730,13 @@ void handleConfigQuery() {
 //
 // ------------ relay get actions ------------
 //
-void processRlyOxxxxx(WiFiClient client, String request, int rlyEqualIndex, int accessKind) {
+// WiFiClient client
+void processRlyOxxxxx(SerialEE * serialEmu,
+                      String request, int rlyEqualIndex, int accessKind) {
 
-//#ifdef DevFsUploadInstall
-//  delay(250);
-//#endif
+  //#ifdef DevFsUploadInstall
+  //  delay(250);
+  //#endif
 
   //..0123456789     rlyEqualIndex points at the slash
   // '/RLY=ONn HTTP.....
@@ -630,44 +778,35 @@ void processRlyOxxxxx(WiFiClient client, String request, int rlyEqualIndex, int 
 
   //db  Dprintln("processing... Relay get");
 
-  //?? need to sprint this stuff and send as a whole
-  if (accessKind == httpAccessed) {
-    HttpCtrl::respondHttp200(client, "text/plain");
-  } else {
-    client.print("ACK>");
-  }
+  //    client.print("ACK>");
+
   // if the line is a GET /RLY=xxxxxxx HTTP/1.1 then its a
   // relay action and no files need to be transferred, only the
   // relays need to be activated on or off
   String i2cOkay = mcp23017Obj->writeRelaysA();
+  serialEmu->print(mcp23017Obj->gpioAToBinaryString());
 
-  client.print(mcp23017Obj->gpioAToBinaryString());
   if (intOfNval > -1) {
     // single relay impact
-    client.print("=R");
-    client.print(intOfNval);
+    serialEmu->print("=R");
+    serialEmu->print(intOfNval);
   }
   if (intOfNval == -2) {
-    client.print("=A");
-    client.print(onOffQuery);  // 'N' of 'F'
+    serialEmu->print("=A");
+    serialEmu->printc(onOffQuery);  // 'N' of 'F'
   }
-  client.println("");
-  if (i2cOkay == "") {
-    client.print("okay");
-  } else {
-    client.println(i2cOkay);
-    client.print("not okay");
-  }
-  if (accessKind == tcpAccessed) {
-    delay(100); // if not provided the buffer is not complete for tcp access response
-  }
-  client.flush();
-  client.stop(); // without this there is a 2-3 second delay
+  serialEmu->println("");
 
+  if (i2cOkay == "") {
+    serialEmu->print("okay");
+  } else {
+    serialEmu->println(i2cOkay);
+    serialEmu->print("not okay");
+  }
   //  // if the line is a GET /RLY=xxxxxxx HTTP/1.1 then its a
   //  // relay action and no files need to be transferred, only the
   //  // relays need to be activated on or off
-  //  mcp23017Obj->writeRelaysA();
+  mcp23017Obj->writeRelaysA();
 }
 
 // ----------------------------------------------------------
@@ -748,7 +887,7 @@ boolean srtWifiSvrStation() {
   //
   int ssidIndexToConnect = -1;
 
-  for (int i = 0; i < maxSsids; ++i) {
+  for (int i = 0; i < maxSsids; i++) {
     String lookupSsid = SsidCfgMgr::ssidnamArr[i];
     if (lookupSsid == "??") {
       continue;
@@ -762,8 +901,7 @@ boolean srtWifiSvrStation() {
     if (ssidObj.ssidChStr == "auto") {
       // this is an auto channel and visible SSID
       Dprintln(":visible");
-
-      for (int j = 0; j < netFoundCount; ++j) {
+      for (int j = 0; j < netFoundCount; j++) {
         if (WiFi.SSID(j) == lookupSsid) {
           ssidIndexToConnect = i;
 
@@ -787,7 +925,7 @@ boolean srtWifiSvrStation() {
   if (ssidIndexToConnect == -1) {
     return false;
   }
-  return connectToNet(i, false); // visible network
+  return connectToNet(ssidIndexToConnect, false); // visible network
 }
 
 boolean connectToNet(int ssidIndexToConnect, boolean connInvisible) {
@@ -839,7 +977,10 @@ boolean connectToNet(int ssidIndexToConnect, boolean connInvisible) {
   delay(10);
   char* ssidNamePart = ssidObj.getName();
 
-  Dprint(" --Attempting connect- ");
+  //Dprintln(ssidNamePart);
+  //Dprintln(ssidObj.getPwd());
+
+  Dprint(" --Connecting- ");
   if (ssidObj.ssidChStr != "auto") {
     char buffer[10];
     ssidObj.ssidChStr.toCharArray(buffer, 8);
@@ -877,7 +1018,8 @@ boolean connectToNet(int ssidIndexToConnect, boolean connInvisible) {
       return false;
     }
   }
-  Dprint("\nConnected IP: ");
+  Dprintln("");
+  Dprint("Connected IP: ");
   Dprintln(WiFi.localIP());
 
   // start LISTENING on the HTTP and TCP port for processing
@@ -1344,4 +1486,82 @@ boolean querySsid(WiFiClient client, SsidCfgMgr ssidObj) {
   client.stop();
 
   return true;
+}
+
+void runAsSerial() {
+  SerialEE* serialEEObj;
+  char inData[INPUTMAX]; // allocate space for input data
+  char inC;
+
+  accessPermit = true;
+
+  int index = 0;
+  while (Serial.available() > 0) {
+
+    if (index < INPUTMAX) {
+      // Don't read unless
+      // there you know there is data
+      inC = Serial.read();
+
+      inData[index] = inC;
+      index++; // Increment where to write next
+      inData[index] = '\0'; // Null terminate the string
+
+      if (inC == 10) { // do action on LF received
+        String input = String(inData);
+        input.toUpperCase();
+
+        index = 0;
+        inData[0] = 0;
+
+        int relayOperateIndex = input.indexOf("/RLY=O");
+        if (relayOperateIndex > -1) {
+          serialEEObj = new SerialEE();
+
+          processRlyOxxxxx(serialEEObj, input, relayOperateIndex, httpAccessed);
+
+          Serial.println(serialEEObj->toString());
+          Serial.flush();
+          //          Serial.stop(); // without this there is a 2-3 second delay
+        } else {
+          boolean validBool = false;
+          boolean notSerialMode = true;
+
+          input.toLowerCase();
+
+          int configIndex = input.indexOf("/cfg=");
+          if (configIndex > -1) {
+            // the config will set the mode type of operation
+            // 01234567
+            // /cfg=ap
+
+            String typeValue = input.substring(5);
+            typeValue.trim();
+
+            Serial.print(":");
+            Serial.print(typeValue);
+            Serial.println(":");
+
+            byte modeByte = setMode(typeValue);
+
+            // mode byte if a binary for the settings of validBool and notSerialMode
+            validBool = (modeByte &  2) > 0;
+            notSerialMode = (modeByte &  1 > 0);
+          }
+          //
+          if (validBool) {
+            if (notSerialMode) {
+              // if changing from serial to something else, remove the
+              // cfg file
+              SPIFFS.remove(runAsSerialFilename);
+            }
+            delay(1000);
+            accessPermit = true;
+            handleRestart();
+          }
+
+        }
+      }
+    }
+  }
 }
