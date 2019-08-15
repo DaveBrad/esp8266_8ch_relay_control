@@ -17,6 +17,9 @@ function onloadInit(){
 	setButtonState();
 	
 	setViewFromCookie();
+	
+	var refreshButt = document.getElementById('rfh');
+	refreshButt.click();
 }
 
 function makeSvgButt(){
