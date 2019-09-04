@@ -13,7 +13,7 @@
  </head>
  <body onload="onloadFunc();">
   <div class="pwddiv">
-   <p id='entpwd'>Enter a password for device-access configuration changes (8-16 characters).</p> 
+   <p id='entpwd'>Enter a password for device-access configuration changes (8-16 characters).</p>
    <button id='chgpwd' onclick="togglechgpwd();">Change password</button>
    <div id="pwddiv">
     <table>
@@ -45,7 +45,7 @@
       <input type='text' id='mcpadr' name='mcpadr' size='2' maxlength='2' value='-1' onkeyup="mcpValid(this);">
      <br>[0x20-0x27]</td>
 	 <td>
-      <button id='mcpadrset' class='mcpadrset' onclick="mcpAddrSend();" type="button">Set MCP23071</button></td>
+      <button id='mcpadrset' class='mcpadrset' onclick="mcpAddrSend();" type="button">Set MCP23017</button></td>
 	<td>
       The auxilary MCP23017 circuit has 8 I2C addresses that may be used and is part of the
 	  MCP23017 board/circuit the user attaches. The default is 0x20.
@@ -62,8 +62,8 @@
      </td>
     </tr>
    </table>
-   
-   
+
+
    <div id="conndatadiv">
     <h3>Device (ESP8266) connection data</h3>
     <div id="ipinputdivparent">
@@ -153,7 +153,7 @@
       </table>
      </div>
     </div>
-	
+
    </div>
    <h3>Device reboot actions</h3>
    <table class="pwdacc setssid">
@@ -173,7 +173,7 @@
    <td>&nbsp;</td>
 
    </tr>
-   
+
    <tr>
    <tr><td>&nbsp;</td>
    </tr>
@@ -181,7 +181,7 @@
     <button id='factory' class='inl' onclick="actssid('factory');" type="button">Factory reset</button>
 	WARNING:
    </td>
-   
+
    </tr>
    <tr>
    <td colspan='4'>Will reset all configuration data to factory default. Will need to access
